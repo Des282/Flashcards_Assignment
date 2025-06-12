@@ -96,13 +96,13 @@ public:
 
 
     void loadFromFile(const string& filename) {
-        ifstream in(filename);
+        ifstream filein(filename);
         string q, a;
         int s;
         string line;
         num = 0;
 
-        while (getline(in, line)) {
+        while (getline(filein, line)) {
             size_t pos1 = line.find("|");
             size_t pos2 = line.rfind("|");
             if (pos1 != string::npos && pos2 != string::npos && pos1 != pos2) {
@@ -112,9 +112,8 @@ public:
                 card[num++] = Flashcard(q, a, s);
             }
         }
-
-        in.close();
-        cout << "Cards loaded.\n";
+        filein.close();
+        cout << "Cards done loaded.\n";
     }
 
     void DeleteCard() {
@@ -123,38 +122,75 @@ public:
         }
 
         int chosen;
-        cout << "Enter number to delete: ";
+        cout << "Enter No.flashcard that want to delete: ";
         cin >> chosen;
 
         if (chosen >= 1 && chosen <= num) {
             for (int i = chosen - 1; i < num - 1; i++) {
                 card[i] = card[i + 1];
             }
-            num--;
+            num = num - 1;
             cout << "Card deleted.\n";
         } else {
-            cout << "Invalid number.\n";
+            cout << "Invalid No.falshcard chosen.\n";
         }
     }
 
     void addCardToList() {
-        card[num++] = addCard();
+        num = num + 1;
+        card[num] = addCard();
     }
 };
 
-
-class App  //display the menu
-{
-private:
-
-
+class App {
 public:
+    SystemManager manager;
 
+    void run() {
+        int choice;
+        string name;
+        cout << "Enter your name: ";
+        cin >> name;
+
+        do {
+            cout << "\n=== Digital Flashcard Menu ===" << endl;
+            cout << "1. Add Flashcard\n2. Review Cards\n3. Delete Cards\n4. Save Cards\n5. Load Cards\n6. Exit\nChoice: ";
+            cin >> choice;
+            switch (choice) {
+                case 1:{
+                    manager.addCardToList();
+                    break;
+                }
+                case 2:{
+                    manager.reviewCards(name);
+                    break;
+                }
+                case 3:{
+                    manager.DeleteCard();
+                    break;
+                }
+                case 4:{
+                    manager.SaveToFile("Savedflashcards.txt");
+                    break;
+                }
+                case 5:{
+                    manager.loadFromFile("Loadflashcards.txt");
+                    break;
+                }
+                case 6:{
+                    cout << "Exiting program.\n";
+                    break;
+                }
+                default:{
+                    cout << "Invalid choice.\n";
+                }
+            }
+        } while (choice != 6);
+    }
 };
 
-int main()
-{
-
+int main() {
+    App app;
+    app.run();
     return 0;
 }
-
