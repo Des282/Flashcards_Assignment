@@ -39,52 +39,107 @@ public:
     }
 };
 
-class SystemManager{  //to run the function which displaying on menu
-private:
-    SystemProgress progress;
-
+class SystemManager {
 public:
-    SystemManager();
-    void addcard(){
-        string ques;
-        string ans;
+    Flashcard* card = new Flashcard[100];
+    int num = 0;
+    SystemProcess process;
+
+    Flashcard addCard() {
+        string q, a;
         int s;
-        cout<<"Question: "<<endl;
-        cin>>ques;
-        cout<<"\nAnswer: "<<endl;
-        cin>>ans;
-        cout<<"\nScore: "<<endl;
-        cin>>s;
-        f_array[num] = Flashcard(ques, ans, s);
+        cin.ignore();
+        cout << "Enter question: ";
+        getline(cin, q);
+        cout << "Enter answer: ";
+        getline(cin, a);
+        cout << "Enter score: ";
+        cin >> s;
+        return Flashcard(q, a, s);
     }
 
-    void deletecard(){
-        for (int j=0;j<num;j++){
-            cout<<j+1<<". "<<endl;
-            cout<<"Question: "<<f_array[j].showquestion()<<endl;
-            cout<<"\nAnswer: "<<f_array[j].showanswer()<<endl;
-        }
-        cout<<"\nDelete which no.flashcard: "<<endl;
-        int d;
-        cin<<d;
-        for (j=0;j<num;j++){
-            if(j+1 == d){
-                delete f_array[j];
-                cout<<"\nDelete successfully"<<endl;
-                break;
+    void reviewCards(string a_name) {
+        string response;
+        process.counter = 0;
+
+        for (int j = 0; j < num; j++) {
+            cout << "Q" << j + 1 << ". " << card[j].getQuestion() << endl;
+            cout << "Do you know the answer? (yes/no): ";
+            cin >> response;
+
+            if (response == "yes") {
+                process.updateScore(card[j]);
+                cout << a_name << "'s current score: " << process.getScore() << endl;
+            } else if (response == "no") {
+                cout << "You lose " << card[j].getScore() << " mark(s)." << endl;
+            } else {
+                cout << "Invalid response.\n";
             }
         }
+        cout << "Final Score: " << process.getScore() << endl;
     }
 
-    void reviewcard(){
-        for(int i=0;i<num;i++){
+    void SaveToFile(const string& filename) {
+        ofstream out(filename); // create or overwrite file
+        if (!out) {
+        cerr << "Error creating file.\n";
+        return;
+        }
+        for (int i = 0; i < num; i++) {
+            out << card[i].getQuestion() << "|"
+            << card[i].getAnswer() << "|"
+            << card[i].getScore() << "\n";
+        }
+        out.close();
+        cout << "Flashcards successfully saved to " << filename << ".\n";
+}
 
+
+    void loadFromFile(const string& filename) {
+        ifstream in(filename);
+        string q, a;
+        int s;
+        string line;
+        num = 0;
+
+        while (getline(in, line)) {
+            size_t pos1 = line.find("|");
+            size_t pos2 = line.rfind("|");
+            if (pos1 != string::npos && pos2 != string::npos && pos1 != pos2) {
+                q = line.substr(0, pos1);
+                a = line.substr(pos1 + 1, pos2 - pos1 - 1);
+                s = stoi(line.substr(pos2 + 1));
+                card[num++] = Flashcard(q, a, s);
+            }
+        }
+
+        in.close();
+        cout << "Cards loaded.\n";
+    }
+
+    void DeleteCard() {
+        for (int i = 0; i < num; i++) {
+            cout << i + 1 << ". " << card[i].getQuestion() << " | " << card[i].getAnswer() << endl;
+        }
+
+        int chosen;
+        cout << "Enter number to delete: ";
+        cin >> chosen;
+
+        if (chosen >= 1 && chosen <= num) {
+            for (int i = chosen - 1; i < num - 1; i++) {
+                card[i] = card[i + 1];
+            }
+            num--;
+            cout << "Card deleted.\n";
+        } else {
+            cout << "Invalid number.\n";
         }
     }
 
-    void
-
-
+    void addCardToList() {
+        card[num++] = addCard();
+    }
 };
 
 
