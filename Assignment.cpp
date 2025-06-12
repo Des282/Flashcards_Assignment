@@ -26,16 +26,17 @@ public:
     }
 };
 
-class SystemProcess //manage the whole system process
-{
+class SystemProcess {
 public:
-    Flashcard* f_array = new Flashcards; // Fixed maximum array instead of vector
-    int num;                  // Number of flashcards currently stored
+    int counter = 0;
 
-    void UpdateScore(){}
+    void updateScore(Flashcard a_card) {
+        counter = counter + a_card.getScore();
+    }
 
-    void
-
+    int getScore() {
+        return counter;
+    }
 };
 
 class SystemManager{  //to run the function which displaying on menu
