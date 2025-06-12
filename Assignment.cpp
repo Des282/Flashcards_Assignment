@@ -1,29 +1,26 @@
 #include <iostream>
 #include <fstream>
-#include <stdlib.h> // For system("cls")
 #include <string>
 
 using namespace std;
-int num=0;
-class Flashcard
-{
+
+class Flashcard {
+    string question;
+    string answer;
+    int score;
 public:
-    string q;
-    string a;
-    int s;
+    Flashcard() {}
+    Flashcard(string q, string a, int s) : question(q), answer(a), score(s) {}
 
-    Flashcard(string question, string answer, int score){
-        q = question;
-        a = answer;
-        s = score;
-    }   //define each question and answer
-
-    void showquestion(){
-        cout<<question<<endl;
-    }
-    void showanswer(){
-        cout<<answer<<endl;
-    }
+    string getQuestion() {
+        return question;
+        }
+    string getAnswer() {
+        return answer;
+        }
+    int getScore() {
+        return score;
+        }
 };
 
 class SystemProcess {
@@ -80,41 +77,52 @@ public:
     }
 
     void SaveToFile(const string& filename) {
-        ofstream out(filename); // create or overwrite file
-        if (!out) {
+        ofstream fileout(filename); // create or overwrite file
+        if (!fileout) {
         cerr << "Error creating file.\n";
         return;
         }
         for (int i = 0; i < num; i++) {
-            out << card[i].getQuestion() << "|"
+            fileout << card[i].getQuestion() << "|"
             << card[i].getAnswer() << "|"
             << card[i].getScore() << "\n";
         }
-        out.close();
+        fileout.close();
         cout << "Flashcards successfully saved to " << filename << ".\n";
 }
 
 
-    void loadFromFile(const string& filename) {
-        ifstream filein(filename);
-        string q, a;
-        int s;
+    void loadFromFile(const string& filename1) {
+        ifstream in(filename1);
         string line;
-        num = 0;
+        num = 0;  // Reset number of flashcards
+        if(in.is_open()){
+            while (getline(in, line)) {
+                size_t pos1 = line.find('|');
+                size_t pos2 = line.rfind('|');
 
-        while (getline(filein, line)) {
-            size_t pos1 = line.find("|");
-            size_t pos2 = line.rfind("|");
-            if (pos1 != string::npos && pos2 != string::npos && pos1 != pos2) {
-                q = line.substr(0, pos1);
-                a = line.substr(pos1 + 1, pos2 - pos1 - 1);
-                s = stoi(line.substr(pos2 + 1));
+                if (pos1 == string::npos || pos2 == string::npos || pos1 == pos2) {
+                    cerr << "Skipping malformed line: " << line << endl;
+                    continue;
+                }
+
+                string q = line.substr(0, pos1);
+                string a = line.substr(pos1 + 1, pos2 - pos1 - 1);
+                string scoreStr = line.substr(pos2 + 1);
+
+            try {
+                int s = stoi(scoreStr);
                 card[num++] = Flashcard(q, a, s);
+            } catch (exception& e) {
+            cerr << "Invalid score in line: " << line << endl;
             }
         }
-        filein.close();
-        cout << "Cards done loaded.\n";
+        }
+        else{cout<<"Error opening load File."<<endl;}
+        in.close();
+        cout << "Loaded " << num << " flashcard(s) from " << filename1 << ".\n";
     }
+
 
     void DeleteCard() {
         for (int i = 0; i < num; i++) {
@@ -132,7 +140,7 @@ public:
             num = num - 1;
             cout << "Card deleted.\n";
         } else {
-            cout << "Invalid No.falshcard chosen.\n";
+            cout << "Invalid No.flashcard chosen\n";
         }
     }
 
@@ -149,6 +157,7 @@ public:
     void run() {
         int choice;
         string name;
+
         cout << "Enter your name: ";
         cin >> name;
 
@@ -156,6 +165,7 @@ public:
             cout << "\n=== Digital Flashcard Menu ===" << endl;
             cout << "1. Add Flashcard\n2. Review Cards\n3. Delete Cards\n4. Save Cards\n5. Load Cards\n6. Exit\nChoice: ";
             cin >> choice;
+
             switch (choice) {
                 case 1:{
                     manager.addCardToList();
