@@ -78,26 +78,24 @@ public:
 
     void SaveToFile(const string& filename) {
         ofstream fileout(filename); // create or overwrite file
-        if (!fileout) {
-        cerr << "Error creating file.\n";
-        return;
-        }
+        if (fileout.is_open()) {
         for (int i = 0; i < num; i++) {
             fileout << card[i].getQuestion() << "|"
             << card[i].getAnswer() << "|"
             << card[i].getScore() << "\n";
+            }
         }
+        else{cout<<"Error creating file\n";}
         fileout.close();
         cout << "Flashcards successfully saved to " << filename << ".\n";
-}
-
+    }
 
     void loadFromFile(const string& filename1) {
-        ifstream in(filename1);
+        ifstream filein(filename1);
         string line;
         num = 0;  // Reset number of flashcards
-        if(in.is_open()){
-            while (getline(in, line)) {
+        if(filein.is_open()){
+            while (getline(filein, line)) {
                 size_t pos1 = line.find('|');
                 size_t pos2 = line.rfind('|');
 
@@ -119,7 +117,7 @@ public:
         }
         }
         else{cout<<"Error opening load File."<<endl;}
-        in.close();
+        filein.close();
         cout << "Loaded " << num << " flashcard(s) from " << filename1 << ".\n";
     }
 
@@ -204,3 +202,4 @@ int main() {
     app.run();
     return 0;
 }
+
