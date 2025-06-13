@@ -1,199 +1,141 @@
 #include <iostream>
-#include <fstream>
+#include <vector>
 #include <string>
-
+#include <fstream>
+#include <algorithm>
+#include <map>
 using namespace std;
 
 class Flashcard {
+public:
     string question;
     string answer;
-    int score;
-public:
-    Flashcard() {}
-    Flashcard(string q, string a, int s) : question(q), answer(a), score(s) {}
 
-    string getQuestion() {
-        return question;
-        }
-    string getAnswer() {
-        return answer;
-        }
-    int getScore() {
-        return score;
-        }
-};
+    Flashcard(string q = "", string a = "") : question(q), answer(a) {}
 
-class SystemProcess {
-public:
-    int counter = 0;
-
-    void updateScore(Flashcard a_card) {
-        counter = counter + a_card.getScore();
-    }
-
-    int getScore() {
-        return counter;
+    void display() const {
+        cout << "Q: " << question << endl;
     }
 };
 
-class SystemManager {
+class UserProgress {
 public:
-    Flashcard* card = new Flashcard[100];
-    int num = 0;
-    SystemProcess process;
+    map<string, int> difficultyScore; // higher = more difficult
+    int totalScore = 0;
 
-    Flashcard addCard() {
-        string q, a;
-        int s;
-        cin.ignore();
-        cout << "Enter question: ";
-        getline(cin, q);
-        cout << "Enter answer: ";
-        getline(cin, a);
-        cout << "Enter score: ";
-        cin >> s;
-        return Flashcard(q, a, s);
-    }
-
-    void reviewCards(string a_name) {
-        string response;
-        process.counter = 0;
-
-        for (int j = 0; j < num; j++) {
-            cout << "Q" << j + 1 << ". " << card[j].getQuestion() << endl;
-            cout << "Do you know the answer? (yes/no): ";
-            cin >> response;
-
-            if (response == "yes") {
-                process.updateScore(card[j]);
-                cout << a_name << "'s current score: " << process.getScore() << endl;
-            } else if (response == "no") {
-                cout << "You lose " << card[j].getScore() << " mark(s)." << endl;
-            } else {
-                cout << "Invalid response.\n";
-            }
+    void updateScore(const string& question, bool remembered) {
+        if (!remembered) {
+            difficultyScore[question]++;
+            totalScore -= 1;
         }
-        cout << "Final Score: " << process.getScore() << endl;
-    }
-
-    void SaveToFile(const string& filename) {
-        ofstream fileout(filename); // create or overwrite file
-        if (fileout.is_open()) {
-        for (int i = 0; i < num; i++) {
-            fileout << card[i].getQuestion() << "|"
-            << card[i].getAnswer() << "|"
-            << card[i].getScore() << "\n";
-            }
+        else {
+            if (difficultyScore[question] > 0)
+                difficultyScore[question]--;
+            totalScore += 1;
         }
-        else{cout<<"Error creating file\n";}
-        fileout.close();
-        cout << "Flashcards successfully saved to " << filename << ".\n";
     }
 
-    void loadFromFile(const string& filename1) {
-        ifstream filein(filename1);
+    int getScore(const string& question) const {
+        auto it = difficultyScore.find(question);
+        return it != difficultyScore.end() ? it->second : 0;
+    }
+
+    int getTotalScore() const {
+        return totalScore;
+    }
+};
+
+class FlashcardManager {
+private:
+    vector<Flashcard> cards;
+    UserProgress progress;
+
+public:
+    void addCard(const Flashcard& card) {
+        cards.push_back(card);
+    }
+
+    void reviewCards() {
+        if (cards.empty()) {
+            cout << "No cards to review.\n";
+            return;
+        }
+
+        // Sort by difficulty descending
+        sort(cards.begin(), cards.end(), [this](const Flashcard& a, const Flashcard& b) {
+            return progress.getScore(a.question) > progress.getScore(b.question);
+        });
+
+        for (auto& card : cards) {
+            card.display();
+            cout << "Do you remember the answer? (yes/no): ";
+            string response;
+            getline(cin, response);
+
+            bool remembered = (response == "yes" || response == "Yes");
+            if (!remembered) cout << "Answer: " << card.answer << endl;
+
+            progress.updateScore(card.question, remembered);
+            cout << "Current Score: " << progress.getTotalScore() << "\n";
+        }
+    }
+
+    void saveToFile(const string& filename) {
+        ofstream out(filename);
+        for (auto& card : cards)
+            out << card.question << "|" << card.answer << endl;
+        out.close();
+        cout << "Cards saved.\n";
+    }
+
+    void loadFromFile(const string& filename) {
+        cards.clear();
+        ifstream in(filename);
         string line;
-        num = 0;  // Reset number of flashcards
-        if(filein.is_open()){
-            while (getline(filein, line)) {
-                size_t pos1 = line.find('|');
-                size_t pos2 = line.rfind('|');
-
-                if (pos1 == string::npos || pos2 == string::npos || pos1 == pos2) {
-                    cerr << "Skipping malformed line: " << line << endl;
-                    continue;
-                }
-
-                string q = line.substr(0, pos1);
-                string a = line.substr(pos1 + 1, pos2 - pos1 - 1);
-                string scoreStr = line.substr(pos2 + 1);
-
-            try {
-                int s = stoi(scoreStr);
-                card[num++] = Flashcard(q, a, s);
-            } catch (exception& e) {
-            cerr << "Invalid score in line: " << line << endl;
+        while (getline(in, line)) {
+            size_t sep = line.find('|');
+            if (sep != string::npos) {
+                string q = line.substr(0, sep);
+                string a = line.substr(sep + 1);
+                cards.emplace_back(q, a);
             }
         }
-        }
-        else{cout<<"Error opening load File."<<endl;}
-        filein.close();
-        cout << "Loaded " << num << " flashcard(s) from " << filename1 << ".\n";
-    }
-
-
-    void DeleteCard() {
-        for (int i = 0; i < num; i++) {
-            cout << i + 1 << ". " << card[i].getQuestion() << " | " << card[i].getAnswer() << endl;
-        }
-
-        int chosen;
-        cout << "Enter No.flashcard that want to delete: ";
-        cin >> chosen;
-
-        if (chosen >= 1 && chosen <= num) {
-            for (int i = chosen - 1; i < num - 1; i++) {
-                card[i] = card[i + 1];
-            }
-            num = num - 1;
-            cout << "Card deleted.\n";
-        } else {
-            cout << "Invalid No.flashcard chosen\n";
-        }
-    }
-
-    void addCardToList() {
-        num = num + 1;
-        card[num] = addCard();
+        in.close();
+        cout << "Cards loaded.\n";
     }
 };
 
 class App {
-public:
-    SystemManager manager;
+    FlashcardManager manager;
 
+public:
     void run() {
         int choice;
-        string name;
-
-        cout << "Enter your name: ";
-        cin >> name;
-
         do {
-            cout << "\n=== Digital Flashcard Menu ===" << endl;
-            cout << "1. Add Flashcard\n2. Review Cards\n3. Delete Cards\n4. Save Cards\n5. Load Cards\n6. Exit\nChoice: ";
+            cout << "\n==== Digital Flashcard Menu ====" << endl;
+            cout << "1. Add Flashcard\n2. Review Cards\n3. Save Cards\n4. Load Cards\n5. Exit\nEnter choice: ";
             cin >> choice;
+            cin.ignore();
 
             switch (choice) {
-                case 1:{
-                    manager.addCardToList();
-                    break;
-                }
-                case 2:{
-                    manager.reviewCards(name);
-                    break;
-                }
-                case 3:{
-                    manager.DeleteCard();
-                    break;
-                }
-                case 4:{
-                    manager.SaveToFile("Savedflashcards.txt");
-                    break;
-                }
-                case 5:{
-                    manager.loadFromFile("Loadflashcards.txt");
-                    break;
-                }
-                case 6:{
-                    cout << "Exiting program.\n";
-                    break;
-                }
-                default:{
-                    cout << "Invalid choice.\n";
-                }
+                case 1: addCard(); break;
+                case 2: manager.reviewCards(); break;
+                case 3: manager.saveToFile("flashcards.txt"); break;
+                case 4: manager.loadFromFile("flashcards.txt"); break;
+                case 5: cout << "Exiting...\n"; break;
+                default: cout << "Invalid choice.\n"; break;
             }
-        } while (choice != 6);
+        } while (choice != 5);
+    }
+
+    void addCard() {
+        string q, a;
+        cout << "Enter question: ";
+        getline(cin, q);
+        cout << "Enter answer: ";
+        getline(cin, a);
+        manager.addCard(Flashcard(q, a));
+        cout << "Flashcard added.\n";
     }
 };
 
@@ -202,4 +144,3 @@ int main() {
     app.run();
     return 0;
 }
-
